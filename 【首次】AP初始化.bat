@@ -2,7 +2,7 @@
 @echo off
 setlocal ENABLEDELAYEDEXPANSION
 @mode con cols=80 lines=70
-title Miyouzi_AP【初始化】
+title Miyouzi_AP_V2.0【初始化】
 
 set /a num=0
 set /a no=0
@@ -14,6 +14,9 @@ for /F "delims=" %%i in ('netsh wlan show drivers') do (
 	set "line=!line::=!"
 	set "jud=!line:~0,4!"
 	set "jud2=!line:~0,7!"
+	if "!jud!"=="接口名称" (
+		set "Device=!line:~4!"
+		)
 	if "!jud!"=="驱动程序" (
 		set /a num+=1
 		echo  检测到网卡：
@@ -34,6 +37,18 @@ for /F "delims=" %%i in ('netsh wlan show drivers') do (
 			echo 			　抱歉！该网卡不支持承载网络！
 			echo ==============================================================================
 			echo.
+			
+			if exist UnsupportDevice.ini (
+				set /A DeviceExist=0
+				for /F "delims=" %%i in (UnsupportDevice.ini) do (
+					if "!Device!"=="%%i" set /A DeviceExist=1
+					)
+					if !DeviceExist! equ 0 echo !Device!>>UnsupportDevice.ini
+				) else (
+					echo !Device!>UnsupportDevice.ini
+				)
+				
+				
 			)
 		)
 	)
@@ -70,11 +85,18 @@ exit
 	echo 【请设定热点名称】：
 	set /P ssid=
 	echo.
+	:resetkey
 	echo 【请设定热点密码】：
 	set /P key=
 	echo.
 	echo 			　　设定完成！开始初始化！
-	netsh wlan set hostednetwork mode=allow ssid=%ssid% key=%key%
+	netsh wlan set hostednetwork mode=allow ssid=%ssid% key=%key% >nul 2>nul
+	if not %errorlevel% equ 0 (
+		echo.
+		echo 	　　　　　密码无效！！密码长度应该为 8 到 63 个字符。
+		echo.
+		goto :resetkey
+		)
 	echo ==============================================================================
 	echo.
 	echo 		　　初始化完成！按任意键召唤Miyouzi_AP！
